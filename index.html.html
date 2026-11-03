@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#245c4b">
+<title>Spesa Facile 2.0</title>
+<style>
+:root{--primary:#245c4b;--secondary:#e2eee7;--bg:#f4f5ef;--ink:#202923;--muted:#68756d;--line:#dfe6dd;--card:#fff;--soft:#f0f4ef;--warn:#fff5dc;--danger:#a63f37;--good:#2f735b}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--primary);color:#fff;padding:24px 18px}.wrap{width:min(820px,100%);margin:auto}h1{margin:6px 0;font-size:30px}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;font-weight:800;opacity:.8}header p{margin:0;opacity:.88;font-size:14px;line-height:1.45}main{padding:16px 14px 42px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:5px;background:#e7ebe4;border-radius:16px;margin-bottom:15px}.tab{border:0;background:transparent;color:#5d6961;border-radius:11px;padding:10px 4px;font-size:12px;font-weight:750;cursor:pointer}.tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px #1d332014}.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:13px}h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0}.sub,.hint{color:var(--muted);font-size:12px;line-height:1.5}.hint{font-size:11px;margin:8px 2px 0}.entry{display:flex;gap:8px;margin-top:8px}input,select,button{font:inherit}input,select{min-width:0;width:100%;padding:13px;border:1px solid #d7dfd6;border-radius:11px;background:#fff;color:var(--ink);outline-color:var(--primary)}button{cursor:pointer}.primary{border:0;border-radius:11px;padding:0 16px;background:var(--primary);color:#fff;font-weight:750}.secondary{border:1px solid var(--line);background:#fff;color:var(--primary);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:750}.danger{color:var(--danger)}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:19px 2px 9px}.count{font-size:12px;color:var(--muted)}.product-list{display:grid;gap:8px}.product{display:flex;align-items:center;gap:10px;padding:11px;background:#fff;border:1px solid var(--line);border-radius:13px}.product-main{flex:1;min-width:0}.product-name{font-size:14px;font-weight:750;overflow-wrap:anywhere}.meta,.tags{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:5px}.badge{display:inline-block;padding:4px 7px;border-radius:20px;background:var(--soft);color:#4d6255;font-size:10px;font-weight:750}.badge.meal{background:#e8f0ff;color:#355585}.badge.fit{background:#e4f3ea;color:#246047}.badge.caution{background:#fff0dc;color:#84531d}.qty{font-size:11px;color:var(--muted)}.check{width:23px;height:23px;flex:0 0 23px;accent-color:var(--primary)}.icon-btn{border:0;background:transparent;color:#718077;padding:6px;font-size:17px}.empty{text-align:center;padding:24px 12px;color:var(--muted);font-size:13px;background:#fff;border:1px dashed #d7dfd6;border-radius:13px}.filter-row{display:flex;gap:6px;overflow-x:auto;padding:2px 0 9px}.chip{border:1px solid var(--line);background:#fff;color:#59675e;border-radius:30px;padding:7px 10px;white-space:nowrap;font-size:11px}.chip.active{background:var(--secondary);border-color:#b7cfbf;color:#183d32;font-weight:750}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.profile-note{margin-top:10px;padding:11px;border-radius:12px;background:var(--warn);font-size:11px;line-height:1.5;color:#68501e}.recipe{padding:14px;border:1px solid var(--line);border-radius:14px;margin-bottom:9px;background:#fff}.recipe p{color:var(--muted);font-size:12px;line-height:1.5;margin:7px 0 0}.score{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--good);margin-top:8px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.notice{font-size:11px;line-height:1.5;color:var(--muted);border-left:3px solid #c9d8ce;padding-left:10px}footer{text-align:center;color:#849087;font-size:10px;padding:14px 0}.hidden{display:none}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:20;max-width:90vw;text-align:center}.toast.show{opacity:1;transform:translateX(-50%)}
+@media(max-width:560px){.tabs{grid-template-columns:repeat(2,1fr)}.profile-grid{grid-template-columns:1fr}.entry.stack{display:grid}.primary{min-height:46px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="eyebrow">La tua lista, senza stress</div><h1>Spesa Facile 🛒</h1><p>Organizza la spesa, conserva i preferiti e ricevi idee coerenti con il tuo obiettivo alimentare.</p></div></header>
+<main class="wrap">
+<nav class="tabs" aria-label="Sezioni">
+<button class="tab active" data-tab="shopping">🛒 Lista</button><button class="tab" data-tab="pantry">⭐ Preferiti</button><button class="tab" data-tab="profile">🎯 Obiettivo</button><button class="tab" data-tab="ideas">🍽️ Ricettario</button>
+</nav>
+<section id="shopping" class="panel active">
+<div class="card"><h2>Cosa ti serve?</h2><div class="entry stack"><input id="productInput" type="text" placeholder="Es. salmone affumicato" autocomplete="off" aria-label="Nome prodotto"><input id="quantityInput" type="text" placeholder="Quantità, es. 200 g" autocomplete="off" aria-label="Quantità"><button class="primary" id="addBtn">Aggiungi</button></div><div class="hint">Correggo spazi, maiuscole e alcuni errori comuni. La categoria viene assegnata automaticamente e resta modificabile.</div></div>
+<div class="section-head"><h2>Da acquistare</h2><span class="count" id="shoppingCount"></span></div><div class="filter-row" id="categoryFilters"></div><div class="product-list" id="shoppingList"></div>
+<div class="toolbar"><button class="secondary" id="shareBtn">📤 Condividi lista</button><button class="secondary" id="waBtn">💬 WhatsApp</button><button class="secondary" id="copyBtn">📋 Copia testo</button></div>
+<div class="section-head"><h2>Nel carrello</h2><span class="count" id="doneCount"></span></div><div class="product-list" id="doneList"></div>
+<div class="toolbar"><button class="secondary" id="clearDone">Svuota “nel carrello”</button><button class="secondary" id="restoreDone">Rimetti tutti in lista</button></div>
+</section>
+<section id="pantry" class="panel"><div class="card"><h2>I tuoi preferiti</h2><p class="sub">Gli articoli spuntati vengono salvati una sola volta. Da qui puoi rimetterli nella prossima spesa senza riscriverli.</p><div class="section-head"><h3>Prodotti salvati</h3><span class="count" id="pantryCount"></span></div><div class="product-list" id="pantryList"></div></div>
+<div class="card" id="syncCard"><h2>Sincronizzazione tra dispositivi</h2><p class="sub">Accedi con la stessa email su ogni dispositivo: lista, carrello e preferiti restano allineati.</p><div id="syncOut"><div class="profile-grid"><input id="syncEmail" type="email" autocomplete="email" placeholder="Email" aria-label="Email"><input id="syncPass" type="password" autocomplete="current-password" placeholder="Password (min. 6 caratteri)" aria-label="Password"></div><div class="toolbar"><button class="secondary" id="signInBtn">Accedi</button><button class="secondary" id="signUpBtn">Crea account</button></div></div><div id="syncIn" class="hidden"><p class="sub" id="syncUser"></p><div class="toolbar"><button class="secondary" id="syncNowBtn">🔄 Sincronizza ora</button><button class="secondary danger" id="signOutBtn">Esci</button></div></div><p class="hint" id="syncStatus"></p></div>
+<div class="card"><h2>Backup dei dati</h2><p class="sub">I dati sono salvati solo in questo browser. Esporta un file di backup per non perderli o per spostarli su un altro dispositivo.</p><div id="backupNote" class="profile-note hidden"></div><div class="toolbar"><button class="secondary" id="exportBtn">⬇️ Esporta backup</button><button class="secondary" id="importBtn">⬆️ Importa backup</button></div><label class="sub" style="display:block;margin-top:10px">Modalità di importazione<select id="importMode"><option value="merge">Unisci ai dati attuali</option><option value="replace">Sostituisci tutto</option></select></label><input type="file" id="importFile" accept="application/json,.json" class="hidden"><p class="hint" id="lastBackup"></p></div></section>
+<section id="profile" class="panel"><div class="card"><h2>Il tuo obiettivo</h2><p class="sub">La selezione adatta il linguaggio del ricettario e mette in evidenza i piatti più coerenti. Non crea una dieta clinica.</p><div class="profile-grid"><label class="sub">Obiettivo<select id="dietGoal"><option value="balanced">Alimentazione equilibrata</option><option value="loss">Dimagrimento</option><option value="mass">Massa muscolare</option><option value="cholesterol">Controllo del colesterolo</option><option value="sport">Energia e sport</option></select></label><label class="sub">Preferenza<select id="dietStyle"><option value="all">Nessuna preferenza</option><option value="mediterranean">Mediterranea</option><option value="vegetarian">Vegetariana</option></select></label></div><div class="profile-note"><strong>Importante:</strong> le indicazioni sono orientative. In presenza di colesterolo alto, diabete, allergie, disturbi alimentari, gravidanza o altre condizioni, il piano va definito con medico o dietista.</div></div></section>
+<section id="ideas" class="panel"><div class="card"><h2>Ricettario mirato</h2><p class="sub" id="goalIntro"></p><div class="filter-row" id="mealFilters"></div><div class="section-head"><h3>Piatti suggeriti</h3><span class="count" id="recipeCount"></span></div><div id="recipeList"></div><div class="section-head"><h3>Profilo degli alimenti</h3></div><div id="foodNotes"></div><p class="notice">Valutazioni qualitative e generali: non sostituiscono etichetta nutrizionale, quantità effettiva, frequenza di consumo o parere professionale.</p></div></section>
+<footer>I dati restano nel browser su questo dispositivo.</footer>
+</main>
+<script>
+const KEY='spesa_facile_v2';
+const old=JSON.parse(localStorage.getItem('spesa_facile_v1')||'null');
+let state=JSON.parse(localStorage.getItem(KEY)||'null')||{shopping:old?.shopping||[],done:old?.done||[],pantry:old?.pantry||[],goal:'balanced',style:'all'};
+let activeCategory='Tutte',activeMeal='Tutti';
+const categories=['Frutta e verdura','Carne e pollame','Pesce e frutti di mare','Salumi e affettati','Latte, yogurt e latticini','Formaggi e uova','Pane e prodotti da forno','Pasta, riso e cereali','Legumi e proteine vegetali','Surgelati e gelati','Conserve, sughi e condimenti','Oli, aceti e spezie','Snack, dolci e cioccolato','Colazione e prodotti da spalmare','Bevande','Acqua','Prodotti per la casa','Igiene personale e cosmetica','Neonati e bambini','Animali domestici','Farmacia e parafarmacia','Cancelleria e varie'];
+const rules=[
+['Surgelati e gelati',/surgelat|congelat|gelato|ghiacciol|minestrone|bastoncini di pesce|findus/],
+['Neonati e bambini',/pannolin|omogeneizzat|latte in polvere|latte (per la |di )?crescita|salviettine baby|pappe|biberon/],
+['Animali domestici',/crocchette|scatolette|cibo (per )?(cani|gatti)|per (cani|gatti)|lettiera|antiparassitar/],
+['Prodotti per la casa',/detersiv|ammorbidente|candeggina|sgrassatore|spugne|sacchetti|sacchi|carta igienica|scottex|carta da cucina|pellicola|alluminio|lavastoviglie|lavatrice|mocio|tovaglioli|lampadin|batterie|insetticid|candele|piatti di carta/],
+['Igiene personale e cosmetica',/shampoo|balsamo|docciaschiuma|bagnoschiuma|sapone|dentifricio|spazzolino|collutorio|filo interdentale|deodorante|rasoio|lametta|crema (viso|corpo|mani)|latte (detergente|corpo|solare)|assorbent|fazzoletti|cotton fioc|dischetti|profumo|trucco|mascara|rossetto|smalto/],
+['Farmacia e parafarmacia',/cerotti|garze|disinfettante|termometro|integratore|vitamine|magnesio|potassio|farmaco|collirio|mascherine|tachipirina|ibuprofene/],
+['Colazione e prodotti da spalmare',/burro di (arachidi|mandorle)|burro d.?arachidi|crema di (nocciole|arachidi|mandorle)|frutta secca|frutta a guscio/],
+['Oli, aceti e spezie',/aceto|salsa di soia/],
+['Conserve, sughi e condimenti',/passata|pelati|polpa di pomodoro|polpa a pezzi|sugo|pesto|sottoli|sottaceti|conserv|marmellata|confettura|tonno(?! fresco)|brodo|dado|olive|capperi|mais dolce|mais in scatola/],
+['Snack, dolci e cioccolato',/cioccolat|caramell|patatine|chips|popcorn|merendin|torta|wafer|barrett|snack|nutella|crema spalmabile|biscott|crostat|budino|plumcake/],
+['Bevande',/succo|bevanda|bibita|cola|aranciata|limonata|birra|vino|prosecco|liquore|amaro|spritz|energy drink|ice tea|t[eè] freddo|spremuta|sciroppo|gassosa|chinotto/],
+['Legumi e proteine vegetali',/seitan|tofu|tempeh|burger vegetal\w*|burger di soia|veggie|vegan\w*/],
+['Salumi e affettati',/salmone affumicato|prosciutt|mortadella|salame|bresaola|speck|pancetta|coppa|wurstel|affettat|guanciale|nduja|salamino|porchetta/],
+['Carne e pollame',/pollo|tacchin|manzo|vitell|maiale|suino|bistecc|hamburger|macinat|salsic|coniglio|agnello|cotolett|spezzatino|petto di|cosce|fesa|costine|arrosto|fettine|svizzer|polpett/],
+['Pesce e frutti di mare',/pesce|salmone|tonno fresco|merluzzo|orata|branzino|gamber|calamar|polpo|cozze|vongol|seppie|sgombro|sardine|pescespada|trota|baccal|acciug|alici|surimi|scampi|aragost|spigola|platessa|nasello/],
+['Frutta e verdura',/mel[ae]\b|melagran|per[ae]\b|banan|kiwi|aranc|limon|mandarin|clementin|fragol|mirtill|lampon|uva|pesca|albicocc|ciliegi|prugn|fich|melone|anguria|cocomero|ananas|mango|avocado|pomodor|insalat|zucchin|melanz|carot|patat|cipoll|aglio|spinac|broccol|cavol|peperon|finocch|sedano|fungh|asparag|lattuga|rucola|radicchio|zucca|prezzemol|basilico|cetriol|fagiolin|porri\b|porro|bietol|ravanell|frutta|verdur|cachi|lime\b|agrumi|erbe aromatiche/],
+['Latte, yogurt e latticini',/latte|yogurt|kefir|skyr|burro|panna|ricotta|mascarpone|besciamella/],
+['Formaggi e uova',/formagg|parmigian|grana|pecorino|mozzarella|provola|scamorza|gorgonzola|brie|fontina|emmental|asiago|taleggio|stracchino|feta|philadelphia|burrata|stracciatella|caciotta|crescenza|sottilett|uov/],
+['Pane e prodotti da forno',/pane|panini|panino|focaccia|piadina|cracker|grissini|fette biscottate|toast|pancarr|pizza|brioche|cornetto|panettone|baguette|ciabatta|tramezzin|wrap|taralli|pangrattato/],
+['Pasta, riso e cereali',/pasta|spaghett|penne|fusilli|riso|basmati|orzo|farro|quinoa|cous|avena|fiocchi|polenta|lasagn|gnocchi|tagliatell|tagliolin|tortellin|ravioli|rigatoni|bucatini|farfalle|linguine|maccheroni|paccheri|cannelloni|bulgur|semola/],
+['Legumi e proteine vegetali',/ceci|fagiol|lenticch|piselli|soia|edamame|hummus|cannellini|borlotti|lupini|fave/],
+['Conserve, sughi e condimenti',/polpa|salsa|maionese|ketchup|senape|tahin/],
+['Oli, aceti e spezie',/olio|sale\b|pepe\b|paprika|curcuma|curry|cannella|origano|rosmarino|peperoncino|zenzero|noce moscata|spezie/],
+['Colazione e prodotti da spalmare',/caff[eè]|tisana|th?è(?![a-zà-ù])|camomilla|muesli|cereali|miele|arachidi|nocciole|noci|mandorl|anacardi|pistacchi|pinoli/],
+['Acqua',/acqua|frizzante/]
+];
+const rulesC=rules.map(([c,r])=>[c,new RegExp('(?:^|[^a-zà-ù])(?:'+r.source+')')]);
+const fixes={'mozzarela':'mozzarella','prosciuto':'prosciutto','parmiggiano':'parmigiano','carta igenica':'carta igienica','salmome':'salmone','yogurth':'yogurt','pomidori':'pomodori'};
+function normalizeName(x){let s=x.trim().replace(/\s+/g,' ').toLocaleLowerCase('it-IT').replace(/[.,;:!?]+$/,'');for(const [a,b] of Object.entries(fixes))s=s.replaceAll(a,b);return s.charAt(0).toLocaleUpperCase('it-IT')+s.slice(1)}
+function categorize(name){const s=name.toLowerCase().trim();const L=state.learned&&state.learned[s];if(L&&categories.includes(L))return L;for(const [c,r] of rulesC)if(r.test(s))return c;return 'Cancelleria e varie'}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){toast('Impossibile salvare i dati su questo dispositivo.')}}
+function persist(){state.mod=Math.max(Date.now(),(state.mod||0)+1,(meta.baseMod||0)+1);save();render();scheduleSync()}
+function el(t,c,x){const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n}
+function uniquePantry(p){return !state.pantry.some(x=>x.name.toLowerCase()===p.name.toLowerCase())}
+function addProduct(){const i=document.getElementById('productInput'),q=document.getElementById('quantityInput');if(!i.value.trim())return i.focus();const name=normalizeName(i.value);if(state.shopping.some(p=>p.name.toLowerCase()===name.toLowerCase()))return toast('Questo prodotto è già nella lista.');state.shopping.unshift({id:crypto.randomUUID?.()||Date.now()+Math.random(),name,qty:q.value.trim().replace(/\s+/g,' '),category:categorize(name)});i.value='';q.value='';i.focus();persist()}
+document.getElementById('addBtn').onclick=addProduct;document.getElementById('quantityInput').onkeydown=e=>{if(e.key==='Enter')addProduct()};document.getElementById('productInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('quantityInput').focus()};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));render()});
+document.getElementById('dietGoal').onchange=e=>{state.goal=e.target.value;persist()};document.getElementById('dietStyle').onchange=e=>{state.style=e.target.value;persist()};
+document.getElementById('clearDone').onclick=()=>{state.done=[];persist()};document.getElementById('restoreDone').onclick=()=>{state.shopping.unshift(...state.done.map(p=>({...p,id:crypto.randomUUID?.()||Date.now()+Math.random()})));state.done=[];persist()};
+function categorySelect(p){const s=el('select');categories.forEach(c=>{const o=el('option',null,c);o.selected=c===p.category;s.append(o)});s.setAttribute('aria-label','Categoria di '+p.name);s.onchange=e=>{p.category=e.target.value;state.learned=state.learned||{};state.learned[p.name.toLowerCase()]=p.category;persist()};return s}
+function productRow(p,mode){const row=el('div','product'),main=el('div','product-main');main.append(el('div','product-name',p.name));const meta=el('div','meta');if(mode==='shopping')meta.append(categorySelect(p));else meta.append(el('span','badge',p.category));if(p.qty)meta.append(el('span','qty','Quantità: '+p.qty));main.append(meta);row.append(main);if(mode==='shopping'){const ch=el('input','check');ch.type='checkbox';ch.ariaLabel='Segna come acquistato';ch.onchange=()=>{state.shopping=state.shopping.filter(x=>x.id!==p.id);state.done.unshift(p);if(uniquePantry(p))state.pantry.unshift({...p,id:crypto.randomUUID?.()||Date.now()+Math.random()});persist()};row.prepend(ch);const d=el('button','icon-btn','×');d.onclick=()=>{state.shopping=state.shopping.filter(x=>x.id!==p.id);persist()};row.append(d)}else if(mode==='done'){const u=el('button','icon-btn','↶');u.onclick=()=>{state.done=state.done.filter(x=>x.id!==p.id);state.shopping.unshift(p);persist()};row.append(u)}else{const a=el('button','secondary','＋ Lista');a.onclick=()=>{if(!state.shopping.some(x=>x.name.toLowerCase()===p.name.toLowerCase()))state.shopping.unshift({...p,id:crypto.randomUUID?.()||Date.now()+Math.random()});persist()};row.append(a);const d=el('button','icon-btn danger','×');d.onclick=()=>{state.pantry=state.pantry.filter(x=>x.id!==p.id);persist()};row.append(d)}return row}
+const recipes=[
+{title:'Toast con salmone affumicato e avocado',keys:['salmone affumicato'],meals:['Colazione','Pranzo','Cena'],goals:['balanced','mass','sport'],styles:['all','mediterranean'],text:'Abbina pane, salmone affumicato, avocado o yogurt greco e verdure fresche.',caution:'Il salmone affumicato può essere ricco di sale: trattalo come prodotto conservato e alterna con pesce fresco.'},
+{title:'Salmone e verdure',keys:['salmone'],meals:['Pranzo','Cena'],goals:['balanced','mass','cholesterol','sport','loss'],styles:['all','mediterranean'],text:'Cuoci il salmone fresco o surgelato e abbinalo a verdure e una quota di patate, pane o cereali.',caution:'La porzione e il condimento incidono sull’energia totale.'},
+{title:'Pasta al pomodoro completa',keys:['pasta','passata'],meals:['Pranzo','Cena'],goals:['balanced','sport','mass'],styles:['all','mediterranean','vegetarian'],text:'Completa pasta e pomodoro con verdure e una fonte proteica, per esempio legumi.',caution:'Per dimagrimento o controllo glicemico contano quantità e composizione complessiva del pasto.'},
+{title:'Bowl di legumi e cereali',keys:['ceci'],meals:['Pranzo','Cena'],goals:['balanced','loss','cholesterol','mass','sport'],styles:['all','mediterranean','vegetarian'],text:'Unisci ceci, verdure, riso o farro e olio extravergine.',caution:'Se usi legumi in scatola, sciacquali; aumenta le fibre gradualmente.'},
+{title:'Uova con verdure e pane',keys:['uova'],meals:['Colazione','Pranzo','Cena'],goals:['balanced','mass','sport','loss'],styles:['all','mediterranean','vegetarian'],text:'Prepara uova con verdure e completa con pane, preferibilmente integrale.',caution:'Per condizioni cliniche o indicazioni specifiche sul colesterolo, concorda frequenza e quantità con un professionista.'},
+{title:'Yogurt, avena e frutta',keys:['yogurt'],meals:['Colazione','Spuntino'],goals:['balanced','loss','mass','sport','cholesterol'],styles:['all','mediterranean','vegetarian'],text:'Combina yogurt, avena, frutta fresca e una piccola quota di frutta secca.',caution:'Controlla gli zuccheri aggiunti e scegli la versione più adatta al tuo fabbisogno.'},
+{title:'Pollo, cereali e verdure',keys:['pollo'],meals:['Pranzo','Cena'],goals:['balanced','loss','mass','sport'],styles:['all','mediterranean'],text:'Abbina pollo, verdure e riso, farro, pane o patate.',caution:'Preferisci cotture semplici e tagli non lavorati.'},
+{title:'Insalatona completa',keys:['insalata'],meals:['Pranzo','Cena'],goals:['balanced','loss','cholesterol'],styles:['all','mediterranean','vegetarian'],text:'Aggiungi una fonte proteica e una quota di pane, patate o cereali.',caution:'Solo verdure possono non costituire un pasto completo.'}
+];
+const goalText={balanced:'equilibrio e varietà',loss:'sazietà e controllo dell’energia',mass:'adeguato apporto energetico e proteico',cholesterol:'fibre, grassi insaturi e minore presenza di sale e grassi saturi',sport:'energia, recupero e distribuzione delle fonti proteiche'};
+function advice(name){const s=name.toLowerCase();if(/salmone affumicato|salame|prosciutt|mortadella|speck|wurstel/.test(s))return{plus:'Fonte proteica pratica.',nutrients:'Proteine; contenuto di sale spesso significativo nei prodotti conservati.',fit:{balanced:'occasionale',loss:'da dosare',mass:'compatibile',cholesterol:'attenzione',sport:'compatibile'}};if(/salmone|tonno|pesce|pollo|tacchin|uov|tofu|ceci|fagiol|lenticch/.test(s))return{plus:'Può contribuire all’apporto proteico.',nutrients:'Proteine; profilo variabile per grassi, fibre e sale.',fit:{balanced:'adatto',loss:'adatto',mass:'molto utile',cholesterol:'valuta il tipo',sport:'molto utile'}};if(/pasta|riso|pane|patat|avena|cereali|piadina/.test(s))return{plus:'Fonte di carboidrati e quindi di energia.',nutrients:'Carboidrati; le versioni integrali aggiungono fibre.',fit:{balanced:'adatto',loss:'porzione mirata',mass:'molto utile',cholesterol:'preferisci integrale',sport:'molto utile'}};if(/mela|banana|kiwi|aranc|pera|fragol|frutta/.test(s))return{plus:'Aggiunge fibre, acqua e micronutrienti.',nutrients:'Carboidrati naturali, fibre e micronutrienti.',fit:{balanced:'molto utile',loss:'molto utile',mass:'adatto',cholesterol:'molto utile',sport:'adatto'}};if(/insalat|pomodor|carot|zucchin|broccol|spinac|verdura/.test(s))return{plus:'Aumenta volume, fibre e varietà del pasto.',nutrients:'Fibre e micronutrienti, con bassa densità energetica nella maggior parte dei casi.',fit:{balanced:'molto utile',loss:'molto utile',mass:'utile',cholesterol:'molto utile',sport:'utile'}};if(/formagg|parmigiano|mozzarella|burro|panna/.test(s))return{plus:'Può apportare proteine e calcio.',nutrients:'Proteine e calcio; grassi saturi e sale variano molto.',fit:{balanced:'da alternare',loss:'porzione mirata',mass:'compatibile',cholesterol:'attenzione',sport:'compatibile'}};return{plus:'Il ruolo dipende dal prodotto preciso e dalla porzione.',nutrients:'Controlla l’etichetta per energia, proteine, fibre, grassi saturi, zuccheri e sale.',fit:{balanced:'da valutare',loss:'da valutare',mass:'da valutare',cholesterol:'da valutare',sport:'da valutare'}}}
+function renderFilters(){const b=document.getElementById('categoryFilters');b.innerHTML='';['Tutte',...new Set(state.shopping.map(p=>p.category))].forEach(c=>{const x=el('button','chip'+(c===activeCategory?' active':''),c);x.onclick=()=>{activeCategory=c;render()};b.append(x)})}
+function renderMeals(){const b=document.getElementById('mealFilters');b.innerHTML='';['Tutti','Colazione','Pranzo','Cena','Spuntino'].forEach(m=>{const x=el('button','chip'+(m===activeMeal?' active':''),m);x.onclick=()=>{activeMeal=m;render()};b.append(x)})}
+function renderRecipes(){document.getElementById('goalIntro').textContent='Priorità selezionata: '+goalText[state.goal]+'. Le etichette indicano i momenti del giorno compatibili.';const names=state.pantry.map(p=>p.name.toLowerCase());let matches=recipes.filter(r=>r.keys.every(k=>names.some(n=>n.includes(k)))).filter(r=>r.goals.includes(state.goal)).filter(r=>state.style==='all'||r.styles.includes(state.style)).filter(r=>activeMeal==='Tutti'||r.meals.includes(activeMeal));const box=document.getElementById('recipeList');box.innerHTML='';if(!matches.length)box.append(el('div','empty',state.pantry.length?'Nessun piatto corrisponde a tutti i filtri. Prova “Tutti” oppure aggiungi altri alimenti ai preferiti.':'Spunta i primi acquisti per alimentare il ricettario.'));matches.forEach(r=>{const c=el('div','recipe');c.append(el('h3',null,r.title));const tags=el('div','tags');r.meals.forEach(m=>tags.append(el('span','badge meal',m)));tags.append(el('span','badge fit',goalText[state.goal]));c.append(tags,el('p',null,r.text),el('p',null,'Attenzione: '+r.caution));box.append(c)});document.getElementById('recipeCount').textContent=matches.length+' idee';const notes=document.getElementById('foodNotes');notes.innerHTML='';state.pantry.filter(p=>!['Prodotti per la casa','Igiene personale e cosmetica','Neonati e bambini','Animali domestici','Farmacia e parafarmacia','Cancelleria e varie'].includes(p.category)).forEach(p=>{const a=advice(p.name),c=el('div','recipe');c.append(el('h3',null,p.name));const tags=el('div','tags');tags.append(el('span','badge',p.category),el('span','badge fit',a.fit[state.goal]));c.append(tags,el('p',null,a.plus),el('p',null,'Apporto indicativo: '+a.nutrients));notes.append(c)});if(!notes.children.length)notes.append(el('div','empty','Gli alimenti acquistati compariranno qui con una lettura qualitativa.'))}
+function render(){document.getElementById('dietGoal').value=state.goal;document.getElementById('dietStyle').value=state.style;const s=document.getElementById('shoppingList'),d=document.getElementById('doneList'),p=document.getElementById('pantryList');s.innerHTML=d.innerHTML=p.innerHTML='';const visible=state.shopping.filter(x=>activeCategory==='Tutte'||x.category===activeCategory);visible.forEach(x=>s.append(productRow(x,'shopping')));state.done.forEach(x=>d.append(productRow(x,'done')));state.pantry.forEach(x=>p.append(productRow(x,'pantry')));if(!visible.length)s.append(el('div','empty',state.shopping.length?'Nessun prodotto in questa categoria.':'La lista è vuota.'));if(!state.done.length)d.append(el('div','empty','I prodotti spuntati compariranno qui.'));if(!state.pantry.length)p.append(el('div','empty','I prodotti acquistati verranno salvati qui.'));document.getElementById('shoppingCount').textContent=state.shopping.length+' prodotti';document.getElementById('doneCount').textContent=state.done.length+' presi';document.getElementById('pantryCount').textContent=state.pantry.length+' preferiti';renderFilters();renderMeals();renderRecipes();updateBackupInfo();updateSyncUI()}
+/* ---------- Toast ---------- */
+function toast(msg,ms=2600){let t=document.getElementById('toast');if(!t){t=el('div','toast');t.id='toast';t.setAttribute('role','status');document.body.append(t)}t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),ms)}
+function newId(){return crypto.randomUUID?.()||String(Date.now()+Math.random())}
+
+/* ---------- Condivisione lista ---------- */
+function listText(){
+  if(!state.shopping.length)return '';
+  const by={};state.shopping.forEach(p=>(by[p.category]=by[p.category]||[]).push(p));
+  const order=categories.filter(c=>by[c]).concat(Object.keys(by).filter(c=>!categories.includes(c)));
+  const lines=['🛒 Lista della spesa ('+state.shopping.length+' '+(state.shopping.length===1?'prodotto':'prodotti')+')'];
+  order.forEach(c=>{lines.push('','*'+c+'*');by[c].forEach(p=>lines.push('☐ '+p.name+(p.qty?' — '+p.qty:'')))});
+  return lines.join('\n');
+}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true}
+  catch{const a=el('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.append(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch{}a.remove();return ok}
+}
+document.getElementById('shareBtn').onclick=async()=>{
+  const t=listText();if(!t)return toast('La lista è vuota.');
+  if(navigator.share){try{await navigator.share({title:'Lista della spesa',text:t})}catch(e){if(e.name!=='AbortError')toast('Condivisione non riuscita.')}}
+  else toast((await copyText(t))?'Lista copiata negli appunti.':'Copia non riuscita.');
+};
+document.getElementById('copyBtn').onclick=async()=>{const t=listText();if(!t)return toast('La lista è vuota.');toast((await copyText(t))?'Lista copiata negli appunti.':'Copia non riuscita.')};
+document.getElementById('waBtn').onclick=()=>{const t=listText();if(!t)return toast('La lista è vuota.');window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank','noopener')};
+
+/* ---------- Backup ---------- */
+function exportBackup(){
+  const payload={app:'spesa_facile',version:2,exportedAt:new Date().toISOString(),data:state};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=el('a');
+  a.href=url;a.download='spesa-facile-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  state.lastBackup=new Date().toISOString();persist();toast('Backup esportato.');
+}
+function cleanList(arr){
+  return (Array.isArray(arr)?arr:[]).filter(p=>p&&typeof p.name==='string'&&p.name.trim()).map(p=>{
+    const name=p.name.trim();
+    return{id:newId(),name,qty:typeof p.qty==='string'?p.qty.trim():'',category:categories.includes(p.category)?p.category:categorize(name)};
+  });
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onerror=()=>toast('Impossibile leggere il file.');
+  r.onload=()=>{
+    let j;try{j=JSON.parse(r.result)}catch{return toast('File non valido.')}
+    const d=j&&j.app==='spesa_facile'&&j.data&&typeof j.data==='object'?j.data:null;
+    if(!d)return toast('Questo non sembra un backup di Spesa Facile.');
+    const inc={shopping:cleanList(d.shopping),done:cleanList(d.done),pantry:cleanList(d.pantry)};
+    const goals=['balanced','loss','mass','cholesterol','sport'],styles=['all','mediterranean','vegetarian'];
+    const learned={};if(d.learned&&typeof d.learned==='object')for(const [k,v] of Object.entries(d.learned))if(categories.includes(v))learned[k.toLowerCase()]=v;
+    if(document.getElementById('importMode').value==='replace'){
+      if(!confirm('Sostituire tutti i dati attuali con quelli del backup?'))return;
+      state.shopping=inc.shopping;state.done=inc.done;state.pantry=inc.pantry;
+      state.learned=learned;state.goal=goals.includes(d.goal)?d.goal:'balanced';state.style=styles.includes(d.style)?d.style:'all';
+      persist();toast('Backup ripristinato.');
+    }else{
+      state.learned=Object.assign({},learned,state.learned||{});
+      let added=0;
+      ['shopping','done','pantry'].forEach(k=>{
+        const have=new Set(state[k].map(p=>p.name.toLowerCase()));
+        inc[k].forEach(p=>{const n=p.name.toLowerCase();if(!have.has(n)){have.add(n);state[k].push(p);added++}});
+      });
+      persist();toast(added?added+' prodotti aggiunti dal backup.':'Nessun nuovo prodotto da aggiungere.');
+    }
+  };
+  r.readAsText(file);
+}
+function updateBackupInfo(){
+  const n=document.getElementById('backupNote'),l=document.getElementById('lastBackup');if(!n||!l)return;
+  const has=state.shopping.length+state.done.length+state.pantry.length>0;
+  const last=state.lastBackup?new Date(state.lastBackup):null;
+  const stale=!last||(Date.now()-last)>14*864e5;
+  l.textContent=last?'Ultimo backup: '+last.toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'}):'Nessun backup ancora esportato.';
+  const show=has&&stale&&!session;
+  n.classList.toggle('hidden',!show);
+  n.textContent=last?'Il tuo ultimo backup risale a più di 2 settimane fa: conviene aggiornarlo.':'Non hai ancora un backup: se i dati del browser vengono cancellati, perdi lista e preferiti.';
+  document.querySelector('[data-tab="pantry"]').textContent='⭐ Preferiti'+(show?' ●':'');
+}
+document.getElementById('exportBtn').onclick=exportBackup;
+document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
+document.getElementById('importFile').onchange=e=>{const f=e.target.files[0];if(f)importBackup(f);e.target.value=''};
+
+/* ---------- Sincronizzazione (Supabase, via REST) ---------- */
+const SB_URL='https://flrojodbrumwaawuuomq.supabase.co',SB_KEY='sb_publishable_8mMCpTPpYevu0zoJr0EVRQ_i6fWLRyg';
+const SESSION_KEY='spesa_facile_session',META_KEY='spesa_facile_syncmeta';
+const GOALS=['balanced','loss','mass','cholesterol','sport'],STYLES=['all','mediterranean','vegetarian'];
+function readJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
+let session=readJSON(SESSION_KEY),meta=readJSON(META_KEY)||{baseMod:0};
+let syncing=false,syncAgain=false,syncTimer=null,lastSync=null,syncErr='';
+function setSession(s){
+  session=s&&s.access_token&&s.user?{access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at||Math.floor(Date.now()/1000)+(s.expires_in||3600),user:{id:s.user.id,email:s.user.email}}:null;
+  try{session?localStorage.setItem(SESSION_KEY,JSON.stringify(session)):localStorage.removeItem(SESSION_KEY)}catch{}
+}
+function setBase(m){meta.baseMod=m;try{localStorage.setItem(META_KEY,JSON.stringify(meta))}catch{}}
+async function sbFetch(path,opt={},auth=true){
+  const hd=Object.assign({apikey:SB_KEY,'Content-Type':'application/json'},opt.headers||{});
+  if(auth&&session)hd.Authorization='Bearer '+session.access_token;
+  let r;try{r=await fetch(SB_URL+path,Object.assign({},opt,{headers:hd}))}catch(e){throw Object.assign(new Error('offline'),{offline:true})}
+  const txt=await r.text();let body=null;try{body=txt?JSON.parse(txt):null}catch{}
+  return{ok:r.ok,status:r.status,body};
+}
+function authMsg(r){
+  const m=String((r.body&&(r.body.msg||r.body.error_description||r.body.message))||'');
+  if(/invalid login/i.test(m))return 'Email o password errate.';
+  if(/already registered|already exists/i.test(m))return 'Esiste già un account con questa email: usa Accedi.';
+  if(/at least|weak/i.test(m))return 'La password deve avere almeno 6 caratteri.';
+  if(/not confirmed/i.test(m))return 'Conferma prima l’email dal link che ti è arrivato.';
+  if(/rate limit|too many/i.test(m)||r.status===429)return 'Troppi tentativi: riprova tra qualche minuto.';
+  if(/valid email|invalid.*email/i.test(m))return 'Indirizzo email non valido.';
+  return 'Operazione non riuscita ('+r.status+').';
+}
+async function signIn(email,pw){const r=await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:pw})},false);if(!r.ok)throw new Error(authMsg(r));setSession(r.body)}
+async function signUp(email,pw){const r=await sbFetch('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password:pw})},false);if(!r.ok)throw new Error(authMsg(r));if(r.body&&r.body.access_token){setSession(r.body);return true}return false}
+async function signOut(){
+  try{if(session)await sbFetch('/auth/v1/logout',{method:'POST'})}catch{}
+  setSession(null);meta={baseMod:0};try{localStorage.setItem(META_KEY,JSON.stringify(meta))}catch{}
+  lastSync=null;syncErr='';render();toast('Disconnesso. I dati restano su questo dispositivo.',3200);
+}
+async function ensureToken(){
+  if(!session)return false;
+  if(session.expires_at-60>Date.now()/1000)return true;
+  const r=await sbFetch('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})},false);
+  if(!r.ok){if(r.status>=400&&r.status<500){setSession(null);render();toast('Sessione scaduta: accedi di nuovo.',3200)}return false}
+  setSession(r.body);return true;
+}
+function cleanSync(arr){
+  return (Array.isArray(arr)?arr:[]).filter(p=>p&&typeof p.name==='string'&&p.name.trim()).map(p=>{
+    const name=p.name.trim();
+    return{id:(typeof p.id==='string'||typeof p.id==='number')?p.id:newId(),name,qty:typeof p.qty==='string'?p.qty:'',category:categories.includes(p.category)?p.category:categorize(name)};
+  });
+}
+function snapshot(){return{shopping:state.shopping,done:state.done,pantry:state.pantry,goal:state.goal,style:state.style,learned:state.learned||{},mod:state.mod||0}}
+function applyRemote(d){
+  state.shopping=cleanSync(d.shopping);state.done=cleanSync(d.done);state.pantry=cleanSync(d.pantry);
+  state.goal=GOALS.includes(d.goal)?d.goal:'balanced';state.style=STYLES.includes(d.style)?d.style:'all';
+  state.learned=(d.learned&&typeof d.learned==='object')?d.learned:{};state.mod=d.mod||Date.now();
+  save();setBase(state.mod);render();
+}
+function mergeData(l,r){
+  const lc=p=>p.name.toLowerCase(),out={};
+  ['shopping','done','pantry'].forEach(k=>{const seen=new Set(),list=[];[...cleanSync(l[k]),...cleanSync(r[k])].forEach(p=>{const n=lc(p);if(!seen.has(n)){seen.add(n);list.push(p)}});out[k]=list});
+  const dn=new Set(out.done.map(lc));out.shopping=out.shopping.filter(p=>!dn.has(lc(p)));
+  const nw=(l.mod||0)>=(r.mod||0)?l:r;
+  out.goal=GOALS.includes(nw.goal)?nw.goal:'balanced';out.style=STYLES.includes(nw.style)?nw.style:'all';
+  out.learned=Object.assign({},r.learned||{},l.learned||{});
+  return out;
+}
+async function pull(){
+  const r=await sbFetch('/rest/v1/spesa_state?select=data,updated_at&user_id=eq.'+encodeURIComponent(session.user.id));
+  if(!r.ok)throw Object.assign(new Error('pull'),{status:r.status});
+  return Array.isArray(r.body)&&r.body[0]?r.body[0]:null;
+}
+async function push(data,row){
+  const now=new Date().toISOString();let r;
+  if(row){
+    r=await sbFetch('/rest/v1/spesa_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&updated_at=eq.'+encodeURIComponent(row.updated_at),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data,updated_at:now})});
+    if(r.ok&&Array.isArray(r.body)&&!r.body.length)return false;
+  }else{
+    r=await sbFetch('/rest/v1/spesa_state',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({user_id:session.user.id,data,updated_at:now})});
+    if(r.status===409)return false;
+  }
+  if(!r.ok)throw Object.assign(new Error('push'),{status:r.status});
+  return true;
+}
+async function doSync(){
+  if(!(await ensureToken())){if(!session)return;throw Object.assign(new Error('token'),{status:401})}
+  const row=await pull(),remote=row&&row.data&&typeof row.data==='object'?row.data:null;
+  const base=meta.baseMod||0,rm=remote?(remote.mod||0):0;
+  const hasLocal=state.shopping.length+state.done.length+state.pantry.length>0;
+  const localChanged=(state.mod||0)>base||(base===0&&hasLocal);
+  const remoteHas=!!remote&&(rm>0||['shopping','done','pantry'].some(k=>Array.isArray(remote[k])&&remote[k].length>0));
+  const remoteChanged=remoteHas&&(rm>base||base===0);
+  if(localChanged&&remoteChanged){
+    Object.assign(state,mergeData(snapshot(),remote));
+    state.mod=Math.max(Date.now(),(state.mod||0)+1,rm+1);save();render();
+    if(!(await push(snapshot(),row))){syncAgain=true;return}
+    setBase(state.mod);toast('Liste unite tra i dispositivi.');
+  }else if(localChanged){
+    if(!state.mod){state.mod=Date.now();save()}
+    if(!(await push(snapshot(),row))){syncAgain=true;return}
+    setBase(state.mod);
+  }else if(remoteChanged){
+    applyRemote(remote);
+  }
+}
+async function runSync(){
+  if(!session)return;
+  if(syncing){syncAgain=true;return}
+  syncing=true;updateSyncUI();
+  try{
+    for(let a=0;a<2;a++){
+      try{await doSync();lastSync=new Date();syncErr='';break}
+      catch(e){if(e.status===401&&a===0&&session){session.expires_at=0;continue}throw e}
+    }
+  }catch(e){
+    syncErr=e.offline?'Offline: le modifiche verranno inviate appena torni online.':'Errore di sincronizzazione'+(e.status?' ('+e.status+')':'')+'.';
+  }finally{
+    syncing=false;updateSyncUI();
+    if(syncAgain){syncAgain=false;scheduleSync(800)}
+  }
+}
+function scheduleSync(ms=1500){if(!session)return;clearTimeout(syncTimer);syncTimer=setTimeout(runSync,ms)}
+function updateSyncUI(){
+  const out=document.getElementById('syncOut');if(!out)return;
+  const inn=document.getElementById('syncIn');
+  out.classList.toggle('hidden',!!session);inn.classList.toggle('hidden',!session);
+  document.getElementById('syncUser').textContent=session?'Connesso come '+session.user.email:'';
+  document.getElementById('syncStatus').textContent=!session?'Non hai effettuato l’accesso: i dati restano solo su questo dispositivo.':syncing?'Sincronizzazione in corso…':syncErr?'⚠️ '+syncErr:lastSync?'Ultima sincronizzazione: '+lastSync.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'';
+  const f=document.querySelector('footer');if(f)f.textContent=session?'I dati sono sincronizzati con il tuo account e restano anche su questo dispositivo.':'I dati restano nel browser su questo dispositivo.';
+}
+async function doAuth(mode){
+  const email=document.getElementById('syncEmail').value.trim().toLowerCase(),pw=document.getElementById('syncPass').value;
+  if(!email||!pw)return toast('Inserisci email e password.');
+  if(pw.length<6)return toast('La password deve avere almeno 6 caratteri.',3200);
+  const btns=[document.getElementById('signInBtn'),document.getElementById('signUpBtn')];btns.forEach(b=>b.disabled=true);
+  try{
+    let ok=true;
+    if(mode==='in')await signIn(email,pw);else ok=await signUp(email,pw);
+    if(!ok){toast('Account creato: conferma l’email dal link ricevuto, poi premi Accedi.',5000);return}
+    document.getElementById('syncPass').value='';
+    render();toast('Accesso effettuato.');await runSync();
+  }catch(e){toast(e.offline?'Connessione assente: riprova più tardi.':e.message,3600)}
+  finally{btns.forEach(b=>b.disabled=false)}
+}
+document.getElementById('signInBtn').onclick=()=>doAuth('in');
+document.getElementById('signUpBtn').onclick=()=>doAuth('up');
+document.getElementById('signOutBtn').onclick=signOut;
+document.getElementById('syncNowBtn').onclick=async()=>{await runSync();toast(syncErr?syncErr:'Sincronizzato.',3000)};
+document.getElementById('syncPass').onkeydown=e=>{if(e.key==='Enter')doAuth('in')};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')runSync()});
+window.addEventListener('online',()=>runSync());
+setInterval(()=>{if(document.visibilityState==='visible')runSync()},30000);
+
+render();
+if(session)runSync();
+</script>
+</body></html>
