@@ -31,6 +31,7 @@ header{background:var(--primary);color:#fff;padding:24px 18px}.wrap{width:min(82
 <div class="toolbar"><button class="secondary" id="clearDone">Svuota “nel carrello”</button><button class="secondary" id="restoreDone">Rimetti tutti in lista</button></div>
 </section>
 <section id="pantry" class="panel"><div class="card"><h2>I tuoi preferiti</h2><p class="sub">Gli articoli spuntati vengono salvati una sola volta. Da qui puoi rimetterli nella prossima spesa senza riscriverli.</p><div class="section-head"><h3>Prodotti salvati</h3><span class="count" id="pantryCount"></span></div><div class="product-list" id="pantryList"></div></div>
+<div class="card" id="syncCard"><h2>Sincronizzazione tra dispositivi</h2><p class="sub">Accedi con la stessa email su ogni dispositivo: lista, carrello e preferiti restano allineati.</p><div id="syncOut"><div class="profile-grid"><input id="syncEmail" type="email" autocomplete="email" placeholder="Email" aria-label="Email"><input id="syncPass" type="password" autocomplete="current-password" placeholder="Password (min. 6 caratteri)" aria-label="Password"></div><div class="toolbar"><button class="secondary" id="signInBtn">Accedi</button><button class="secondary" id="signUpBtn">Crea account</button></div></div><div id="syncIn" class="hidden"><p class="sub" id="syncUser"></p><div class="toolbar"><button class="secondary" id="syncNowBtn">🔄 Sincronizza ora</button><button class="secondary danger" id="signOutBtn">Esci</button></div></div><p class="hint" id="syncStatus"></p></div>
 <div class="card"><h2>Backup dei dati</h2><p class="sub">I dati sono salvati solo in questo browser. Esporta un file di backup per non perderli o per spostarli su un altro dispositivo.</p><div id="backupNote" class="profile-note hidden"></div><div class="toolbar"><button class="secondary" id="exportBtn">⬇️ Esporta backup</button><button class="secondary" id="importBtn">⬆️ Importa backup</button></div><label class="sub" style="display:block;margin-top:10px">Modalità di importazione<select id="importMode"><option value="merge">Unisci ai dati attuali</option><option value="replace">Sostituisci tutto</option></select></label><input type="file" id="importFile" accept="application/json,.json" class="hidden"><p class="hint" id="lastBackup"></p></div></section>
 <section id="profile" class="panel"><div class="card"><h2>Il tuo obiettivo</h2><p class="sub">La selezione adatta il linguaggio del ricettario e mette in evidenza i piatti più coerenti. Non crea una dieta clinica.</p><div class="profile-grid"><label class="sub">Obiettivo<select id="dietGoal"><option value="balanced">Alimentazione equilibrata</option><option value="loss">Dimagrimento</option><option value="mass">Massa muscolare</option><option value="cholesterol">Controllo del colesterolo</option><option value="sport">Energia e sport</option></select></label><label class="sub">Preferenza<select id="dietStyle"><option value="all">Nessuna preferenza</option><option value="mediterranean">Mediterranea</option><option value="vegetarian">Vegetariana</option></select></label></div><div class="profile-note"><strong>Importante:</strong> le indicazioni sono orientative. In presenza di colesterolo alto, diabete, allergie, disturbi alimentari, gravidanza o altre condizioni, il piano va definito con medico o dietista.</div></div></section>
 <section id="ideas" class="panel"><div class="card"><h2>Ricettario mirato</h2><p class="sub" id="goalIntro"></p><div class="filter-row" id="mealFilters"></div><div class="section-head"><h3>Piatti suggeriti</h3><span class="count" id="recipeCount"></span></div><div id="recipeList"></div><div class="section-head"><h3>Profilo degli alimenti</h3></div><div id="foodNotes"></div><p class="notice">Valutazioni qualitative e generali: non sostituiscono etichetta nutrizionale, quantità effettiva, frequenza di consumo o parere professionale.</p></div></section>
@@ -73,7 +74,8 @@ const rulesC=rules.map(([c,r])=>[c,new RegExp('(?:^|[^a-zà-ù])(?:'+r.source+')
 const fixes={'mozzarela':'mozzarella','prosciuto':'prosciutto','parmiggiano':'parmigiano','carta igenica':'carta igienica','salmome':'salmone','yogurth':'yogurt','pomidori':'pomodori'};
 function normalizeName(x){let s=x.trim().replace(/\s+/g,' ').toLocaleLowerCase('it-IT').replace(/[.,;:!?]+$/,'');for(const [a,b] of Object.entries(fixes))s=s.replaceAll(a,b);return s.charAt(0).toLocaleUpperCase('it-IT')+s.slice(1)}
 function categorize(name){const s=name.toLowerCase().trim();const L=state.learned&&state.learned[s];if(L&&categories.includes(L))return L;for(const [c,r] of rulesC)if(r.test(s))return c;return 'Cancelleria e varie'}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){toast('Impossibile salvare i dati su questo dispositivo.')}render()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){toast('Impossibile salvare i dati su questo dispositivo.')}}
+function persist(){state.mod=Math.max(Date.now(),(state.mod||0)+1,(meta.baseMod||0)+1);save();render();scheduleSync()}
 function el(t,c,x){const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n}
 function uniquePantry(p){return !state.pantry.some(x=>x.name.toLowerCase()===p.name.toLowerCase())}
 function addProduct(){const i=document.getElementById('productInput'),q=document.getElementById('quantityInput');if(!i.value.trim())return i.focus();const name=normalizeName(i.value);if(state.shopping.some(p=>p.name.toLowerCase()===name.toLowerCase()))return toast('Questo prodotto è già nella lista.');state.shopping.unshift({id:crypto.randomUUID?.()||Date.now()+Math.random(),name,qty:q.value.trim().replace(/\s+/g,' '),category:categorize(name)});i.value='';q.value='';i.focus();persist()}
@@ -98,9 +100,9 @@ function advice(name){const s=name.toLowerCase();if(/salmone affumicato|salame|p
 function renderFilters(){const b=document.getElementById('categoryFilters');b.innerHTML='';['Tutte',...new Set(state.shopping.map(p=>p.category))].forEach(c=>{const x=el('button','chip'+(c===activeCategory?' active':''),c);x.onclick=()=>{activeCategory=c;render()};b.append(x)})}
 function renderMeals(){const b=document.getElementById('mealFilters');b.innerHTML='';['Tutti','Colazione','Pranzo','Cena','Spuntino'].forEach(m=>{const x=el('button','chip'+(m===activeMeal?' active':''),m);x.onclick=()=>{activeMeal=m;render()};b.append(x)})}
 function renderRecipes(){document.getElementById('goalIntro').textContent='Priorità selezionata: '+goalText[state.goal]+'. Le etichette indicano i momenti del giorno compatibili.';const names=state.pantry.map(p=>p.name.toLowerCase());let matches=recipes.filter(r=>r.keys.every(k=>names.some(n=>n.includes(k)))).filter(r=>r.goals.includes(state.goal)).filter(r=>state.style==='all'||r.styles.includes(state.style)).filter(r=>activeMeal==='Tutti'||r.meals.includes(activeMeal));const box=document.getElementById('recipeList');box.innerHTML='';if(!matches.length)box.append(el('div','empty',state.pantry.length?'Nessun piatto corrisponde a tutti i filtri. Prova “Tutti” oppure aggiungi altri alimenti ai preferiti.':'Spunta i primi acquisti per alimentare il ricettario.'));matches.forEach(r=>{const c=el('div','recipe');c.append(el('h3',null,r.title));const tags=el('div','tags');r.meals.forEach(m=>tags.append(el('span','badge meal',m)));tags.append(el('span','badge fit',goalText[state.goal]));c.append(tags,el('p',null,r.text),el('p',null,'Attenzione: '+r.caution));box.append(c)});document.getElementById('recipeCount').textContent=matches.length+' idee';const notes=document.getElementById('foodNotes');notes.innerHTML='';state.pantry.filter(p=>!['Prodotti per la casa','Igiene personale e cosmetica','Neonati e bambini','Animali domestici','Farmacia e parafarmacia','Cancelleria e varie'].includes(p.category)).forEach(p=>{const a=advice(p.name),c=el('div','recipe');c.append(el('h3',null,p.name));const tags=el('div','tags');tags.append(el('span','badge',p.category),el('span','badge fit',a.fit[state.goal]));c.append(tags,el('p',null,a.plus),el('p',null,'Apporto indicativo: '+a.nutrients));notes.append(c)});if(!notes.children.length)notes.append(el('div','empty','Gli alimenti acquistati compariranno qui con una lettura qualitativa.'))}
-function render(){document.getElementById('dietGoal').value=state.goal;document.getElementById('dietStyle').value=state.style;const s=document.getElementById('shoppingList'),d=document.getElementById('doneList'),p=document.getElementById('pantryList');s.innerHTML=d.innerHTML=p.innerHTML='';const visible=state.shopping.filter(x=>activeCategory==='Tutte'||x.category===activeCategory);visible.forEach(x=>s.append(productRow(x,'shopping')));state.done.forEach(x=>d.append(productRow(x,'done')));state.pantry.forEach(x=>p.append(productRow(x,'pantry')));if(!visible.length)s.append(el('div','empty',state.shopping.length?'Nessun prodotto in questa categoria.':'La lista è vuota.'));if(!state.done.length)d.append(el('div','empty','I prodotti spuntati compariranno qui.'));if(!state.pantry.length)p.append(el('div','empty','I prodotti acquistati verranno salvati qui.'));document.getElementById('shoppingCount').textContent=state.shopping.length+' prodotti';document.getElementById('doneCount').textContent=state.done.length+' presi';document.getElementById('pantryCount').textContent=state.pantry.length+' preferiti';renderFilters();renderMeals();renderRecipes();updateBackupInfo()}
+function render(){document.getElementById('dietGoal').value=state.goal;document.getElementById('dietStyle').value=state.style;const s=document.getElementById('shoppingList'),d=document.getElementById('doneList'),p=document.getElementById('pantryList');s.innerHTML=d.innerHTML=p.innerHTML='';const visible=state.shopping.filter(x=>activeCategory==='Tutte'||x.category===activeCategory);visible.forEach(x=>s.append(productRow(x,'shopping')));state.done.forEach(x=>d.append(productRow(x,'done')));state.pantry.forEach(x=>p.append(productRow(x,'pantry')));if(!visible.length)s.append(el('div','empty',state.shopping.length?'Nessun prodotto in questa categoria.':'La lista è vuota.'));if(!state.done.length)d.append(el('div','empty','I prodotti spuntati compariranno qui.'));if(!state.pantry.length)p.append(el('div','empty','I prodotti acquistati verranno salvati qui.'));document.getElementById('shoppingCount').textContent=state.shopping.length+' prodotti';document.getElementById('doneCount').textContent=state.done.length+' presi';document.getElementById('pantryCount').textContent=state.pantry.length+' preferiti';renderFilters();renderMeals();renderRecipes();updateBackupInfo();updateSyncUI()}
 /* ---------- Toast ---------- */
-function toast(msg){let t=document.getElementById('toast');if(!t){t=el('div','toast');t.id='toast';t.setAttribute('role','status');document.body.append(t)}t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2600)}
+function toast(msg,ms=2600){let t=document.getElementById('toast');if(!t){t=el('div','toast');t.id='toast';t.setAttribute('role','status');document.body.append(t)}t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),ms)}
 function newId(){return crypto.randomUUID?.()||String(Date.now()+Math.random())}
 
 /* ---------- Condivisione lista ---------- */
@@ -172,7 +174,7 @@ function updateBackupInfo(){
   const last=state.lastBackup?new Date(state.lastBackup):null;
   const stale=!last||(Date.now()-last)>14*864e5;
   l.textContent=last?'Ultimo backup: '+last.toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'}):'Nessun backup ancora esportato.';
-  const show=has&&stale;
+  const show=has&&stale&&!session;
   n.classList.toggle('hidden',!show);
   n.textContent=last?'Il tuo ultimo backup risale a più di 2 settimane fa: conviene aggiornarlo.':'Non hai ancora un backup: se i dati del browser vengono cancellati, perdi lista e preferiti.';
   document.querySelector('[data-tab="pantry"]').textContent='⭐ Preferiti'+(show?' ●':'');
@@ -181,6 +183,158 @@ document.getElementById('exportBtn').onclick=exportBackup;
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').onchange=e=>{const f=e.target.files[0];if(f)importBackup(f);e.target.value=''};
 
+/* ---------- Sincronizzazione (Supabase, via REST) ---------- */
+const SB_URL='https://flrojodbrumwaawuuomq.supabase.co',SB_KEY='sb_publishable_8mMCpTPpYevu0zoJr0EVRQ_i6fWLRyg';
+const SESSION_KEY='spesa_facile_session',META_KEY='spesa_facile_syncmeta';
+const GOALS=['balanced','loss','mass','cholesterol','sport'],STYLES=['all','mediterranean','vegetarian'];
+function readJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
+let session=readJSON(SESSION_KEY),meta=readJSON(META_KEY)||{baseMod:0};
+let syncing=false,syncAgain=false,syncTimer=null,lastSync=null,syncErr='';
+function setSession(s){
+  session=s&&s.access_token&&s.user?{access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at||Math.floor(Date.now()/1000)+(s.expires_in||3600),user:{id:s.user.id,email:s.user.email}}:null;
+  try{session?localStorage.setItem(SESSION_KEY,JSON.stringify(session)):localStorage.removeItem(SESSION_KEY)}catch{}
+}
+function setBase(m){meta.baseMod=m;try{localStorage.setItem(META_KEY,JSON.stringify(meta))}catch{}}
+async function sbFetch(path,opt={},auth=true){
+  const hd=Object.assign({apikey:SB_KEY,'Content-Type':'application/json'},opt.headers||{});
+  if(auth&&session)hd.Authorization='Bearer '+session.access_token;
+  let r;try{r=await fetch(SB_URL+path,Object.assign({},opt,{headers:hd}))}catch(e){throw Object.assign(new Error('offline'),{offline:true})}
+  const txt=await r.text();let body=null;try{body=txt?JSON.parse(txt):null}catch{}
+  return{ok:r.ok,status:r.status,body};
+}
+function authMsg(r){
+  const m=String((r.body&&(r.body.msg||r.body.error_description||r.body.message))||'');
+  if(/invalid login/i.test(m))return 'Email o password errate.';
+  if(/already registered|already exists/i.test(m))return 'Esiste già un account con questa email: usa Accedi.';
+  if(/at least|weak/i.test(m))return 'La password deve avere almeno 6 caratteri.';
+  if(/not confirmed/i.test(m))return 'Conferma prima l’email dal link che ti è arrivato.';
+  if(/rate limit|too many/i.test(m)||r.status===429)return 'Troppi tentativi: riprova tra qualche minuto.';
+  if(/valid email|invalid.*email/i.test(m))return 'Indirizzo email non valido.';
+  return 'Operazione non riuscita ('+r.status+').';
+}
+async function signIn(email,pw){const r=await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:pw})},false);if(!r.ok)throw new Error(authMsg(r));setSession(r.body)}
+async function signUp(email,pw){const r=await sbFetch('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password:pw})},false);if(!r.ok)throw new Error(authMsg(r));if(r.body&&r.body.access_token){setSession(r.body);return true}return false}
+async function signOut(){
+  try{if(session)await sbFetch('/auth/v1/logout',{method:'POST'})}catch{}
+  setSession(null);meta={baseMod:0};try{localStorage.setItem(META_KEY,JSON.stringify(meta))}catch{}
+  lastSync=null;syncErr='';render();toast('Disconnesso. I dati restano su questo dispositivo.',3200);
+}
+async function ensureToken(){
+  if(!session)return false;
+  if(session.expires_at-60>Date.now()/1000)return true;
+  const r=await sbFetch('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})},false);
+  if(!r.ok){if(r.status>=400&&r.status<500){setSession(null);render();toast('Sessione scaduta: accedi di nuovo.',3200)}return false}
+  setSession(r.body);return true;
+}
+function cleanSync(arr){
+  return (Array.isArray(arr)?arr:[]).filter(p=>p&&typeof p.name==='string'&&p.name.trim()).map(p=>{
+    const name=p.name.trim();
+    return{id:(typeof p.id==='string'||typeof p.id==='number')?p.id:newId(),name,qty:typeof p.qty==='string'?p.qty:'',category:categories.includes(p.category)?p.category:categorize(name)};
+  });
+}
+function snapshot(){return{shopping:state.shopping,done:state.done,pantry:state.pantry,goal:state.goal,style:state.style,learned:state.learned||{},mod:state.mod||0}}
+function applyRemote(d){
+  state.shopping=cleanSync(d.shopping);state.done=cleanSync(d.done);state.pantry=cleanSync(d.pantry);
+  state.goal=GOALS.includes(d.goal)?d.goal:'balanced';state.style=STYLES.includes(d.style)?d.style:'all';
+  state.learned=(d.learned&&typeof d.learned==='object')?d.learned:{};state.mod=d.mod||Date.now();
+  save();setBase(state.mod);render();
+}
+function mergeData(l,r){
+  const lc=p=>p.name.toLowerCase(),out={};
+  ['shopping','done','pantry'].forEach(k=>{const seen=new Set(),list=[];[...cleanSync(l[k]),...cleanSync(r[k])].forEach(p=>{const n=lc(p);if(!seen.has(n)){seen.add(n);list.push(p)}});out[k]=list});
+  const dn=new Set(out.done.map(lc));out.shopping=out.shopping.filter(p=>!dn.has(lc(p)));
+  const nw=(l.mod||0)>=(r.mod||0)?l:r;
+  out.goal=GOALS.includes(nw.goal)?nw.goal:'balanced';out.style=STYLES.includes(nw.style)?nw.style:'all';
+  out.learned=Object.assign({},r.learned||{},l.learned||{});
+  return out;
+}
+async function pull(){
+  const r=await sbFetch('/rest/v1/spesa_state?select=data,updated_at&user_id=eq.'+encodeURIComponent(session.user.id));
+  if(!r.ok)throw Object.assign(new Error('pull'),{status:r.status});
+  return Array.isArray(r.body)&&r.body[0]?r.body[0]:null;
+}
+async function push(data,row){
+  const now=new Date().toISOString();let r;
+  if(row){
+    r=await sbFetch('/rest/v1/spesa_state?user_id=eq.'+encodeURIComponent(session.user.id)+'&updated_at=eq.'+encodeURIComponent(row.updated_at),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data,updated_at:now})});
+    if(r.ok&&Array.isArray(r.body)&&!r.body.length)return false;
+  }else{
+    r=await sbFetch('/rest/v1/spesa_state',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({user_id:session.user.id,data,updated_at:now})});
+    if(r.status===409)return false;
+  }
+  if(!r.ok)throw Object.assign(new Error('push'),{status:r.status});
+  return true;
+}
+async function doSync(){
+  if(!(await ensureToken())){if(!session)return;throw Object.assign(new Error('token'),{status:401})}
+  const row=await pull(),remote=row&&row.data&&typeof row.data==='object'?row.data:null;
+  const base=meta.baseMod||0,rm=remote?(remote.mod||0):0;
+  const hasLocal=state.shopping.length+state.done.length+state.pantry.length>0;
+  const localChanged=(state.mod||0)>base||(base===0&&hasLocal);
+  const remoteHas=!!remote&&(rm>0||['shopping','done','pantry'].some(k=>Array.isArray(remote[k])&&remote[k].length>0));
+  const remoteChanged=remoteHas&&(rm>base||base===0);
+  if(localChanged&&remoteChanged){
+    Object.assign(state,mergeData(snapshot(),remote));
+    state.mod=Math.max(Date.now(),(state.mod||0)+1,rm+1);save();render();
+    if(!(await push(snapshot(),row))){syncAgain=true;return}
+    setBase(state.mod);toast('Liste unite tra i dispositivi.');
+  }else if(localChanged){
+    if(!state.mod){state.mod=Date.now();save()}
+    if(!(await push(snapshot(),row))){syncAgain=true;return}
+    setBase(state.mod);
+  }else if(remoteChanged){
+    applyRemote(remote);
+  }
+}
+async function runSync(){
+  if(!session)return;
+  if(syncing){syncAgain=true;return}
+  syncing=true;updateSyncUI();
+  try{
+    for(let a=0;a<2;a++){
+      try{await doSync();lastSync=new Date();syncErr='';break}
+      catch(e){if(e.status===401&&a===0&&session){session.expires_at=0;continue}throw e}
+    }
+  }catch(e){
+    syncErr=e.offline?'Offline: le modifiche verranno inviate appena torni online.':'Errore di sincronizzazione'+(e.status?' ('+e.status+')':'')+'.';
+  }finally{
+    syncing=false;updateSyncUI();
+    if(syncAgain){syncAgain=false;scheduleSync(800)}
+  }
+}
+function scheduleSync(ms=1500){if(!session)return;clearTimeout(syncTimer);syncTimer=setTimeout(runSync,ms)}
+function updateSyncUI(){
+  const out=document.getElementById('syncOut');if(!out)return;
+  const inn=document.getElementById('syncIn');
+  out.classList.toggle('hidden',!!session);inn.classList.toggle('hidden',!session);
+  document.getElementById('syncUser').textContent=session?'Connesso come '+session.user.email:'';
+  document.getElementById('syncStatus').textContent=!session?'Non hai effettuato l’accesso: i dati restano solo su questo dispositivo.':syncing?'Sincronizzazione in corso…':syncErr?'⚠️ '+syncErr:lastSync?'Ultima sincronizzazione: '+lastSync.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'';
+  const f=document.querySelector('footer');if(f)f.textContent=session?'I dati sono sincronizzati con il tuo account e restano anche su questo dispositivo.':'I dati restano nel browser su questo dispositivo.';
+}
+async function doAuth(mode){
+  const email=document.getElementById('syncEmail').value.trim().toLowerCase(),pw=document.getElementById('syncPass').value;
+  if(!email||!pw)return toast('Inserisci email e password.');
+  if(pw.length<6)return toast('La password deve avere almeno 6 caratteri.',3200);
+  const btns=[document.getElementById('signInBtn'),document.getElementById('signUpBtn')];btns.forEach(b=>b.disabled=true);
+  try{
+    let ok=true;
+    if(mode==='in')await signIn(email,pw);else ok=await signUp(email,pw);
+    if(!ok){toast('Account creato: conferma l’email dal link ricevuto, poi premi Accedi.',5000);return}
+    document.getElementById('syncPass').value='';
+    render();toast('Accesso effettuato.');await runSync();
+  }catch(e){toast(e.offline?'Connessione assente: riprova più tardi.':e.message,3600)}
+  finally{btns.forEach(b=>b.disabled=false)}
+}
+document.getElementById('signInBtn').onclick=()=>doAuth('in');
+document.getElementById('signUpBtn').onclick=()=>doAuth('up');
+document.getElementById('signOutBtn').onclick=signOut;
+document.getElementById('syncNowBtn').onclick=async()=>{await runSync();toast(syncErr?syncErr:'Sincronizzato.',3000)};
+document.getElementById('syncPass').onkeydown=e=>{if(e.key==='Enter')doAuth('in')};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')runSync()});
+window.addEventListener('online',()=>runSync());
+setInterval(()=>{if(document.visibilityState==='visible')runSync()},30000);
+
 render();
+if(session)runSync();
 </script>
 </body></html>
